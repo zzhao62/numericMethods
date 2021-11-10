@@ -230,31 +230,106 @@ def CN_method(m, dx, r, T, L=2*np.pi):
     return x, u
 
 def plot_result(m, dx, r, T):
-    x, u_exact = exact_solution(m=m, dx=dx, r=r, T=T)
+    x, u_exact = exact_solution(m=m, dx=dx, T=T)
     xf, uf = FE_method(m=m, dx=dx, r=r, T=T)
     xbTDMA, ubTDMA = BE_TDMA(m=m, dx=dx, r=r, T=T)
-    cTDMA, ucTDMA = CN_TDMA(m=m, dx=dx, r=r, T=T)
+    xcTDMA, ucTDMA = CN_TDMA(m=m, dx=dx, r=r, T=T)
+    print("FE max difference", max(np.abs(u_exact-uf)))
+    print("BE max difference", max(np.abs(u_exact-ubTDMA)))
+    print("CN max difference", max(np.abs(u_exact-ucTDMA)))
+    plt.figure(figsize=(6,4))
+    plt.ylim(-1,1)
+    plt.plot(x, u_exact, label="Exact Solution")
+    plt.plot(xf, uf, label="Forward Euler")
+    plt.plot(xbTDMA, ubTDMA, label="Backward Euler TDMA")
+    plt.plot(xcTDMA, ucTDMA, label="Crank Nicolson TDMA")
+    name = "T={}, m={}, dx={}, r={}".format(T, m, round(dx,2), round(r,2))
+    plt.title(name)
+    plt.legend(fontsize=6)
+    saveName = ""
+    if (m == 2):
+        saveName = "c{}".format(T)
+    else:
+        saveName = "m={}".format(m)
 
+    plt.savefig("{}.png".format(saveName))
+    plt.show()
 
+def error_analysis(method, name):
+    m = 2
+    T = 0.5
+    X = 1
+    r = 1/3
+    n = 20
+    error = np.zeros(n-2)
+    dxs = np.zeros(n-2)
+    for i in range(2,n):
+        dx = 2*np.pi/(i*10)
+        dxs[i-2] = dx**2
+        x, u_e = exact_solution(m=m, dx=dx, T=T)
+        xp, u_p = method(m=m, dx=dx, r=r, T=T)
+        p = round(X/(2*np.pi)*len(x))
+        error[i-2] = np.abs(u_e[p] - u_p[p])
+    plt.figure(figsize=(6,4))
+    plt.plot(dxs, error)
+    plt.title("{} Error Analysis".format(name))
+    plt.xlabel("dx^2")
+    plt.ylabel("error at X=pi When Time=0.5")
+    plt.savefig("{}error.png".format(name[:2]))
+    plt.show()
+    return error
+
+def stability_anlysis(method, name, r=1/3):
+    m = 2
+    X = np.pi
+    ts = np.linspace(0,2,100)
+    dx = 2*np.pi/10
+    n = ts.shape[0]
+    error = np.zeros(n)
+    for i in range(n):
+        x, u_e = exact_solution(m=m, dx=dx, T=ts[i])
+        xt, u_t = method(m=m, dx=dx, r=r, T=ts[i])
+        p = round(X/(2*np.pi)*len(x))
+        error[i] = np.abs(u_e[p] - u_t[p])
+    plt.figure(figsize=(6,4))
+    plt.plot(ts, error)
+    plt.title("{} Stability Analysis".format(name))
+    plt.xlabel("Time")
+    plt.ylabel("Error at X=pi")
+    plt.savefig("{}stability.png".format(name[:2]))
+    plt.show()
+    return error
+
+def amplicationFactors():
+    p = np.linspace(0,2,100)
+    Ae = np.exp(-2*np.power(p,2))
+    Af = 1 - 2*np.power(np.sin(p),2)
+    Ab = 1/(1+2*np.power(np.sin(p),2))
+    Ac = (1-np.power(np.sin(p),2))/(1+np.power(np.sin(p),2))
+    plt.ylim((-1.5,1.5))
+    plt.xlabel("p")
+    plt.ylabel("A(p)")
+    plt.title("r=0.5")
+    plt.plot(p,Ae, label="Exact Solution")
+    plt.plot(p,Af, label="Forward Euler")
+    plt.plot(p,Ab, label="Backward Euler")
+    plt.plot(p,Ac, label="Crank Nicolson")
+    plt.legend()
+    plt.savefig("amplication.png")
+    plt.show()
 
 if __name__ == '__main__':
-    xc, uc = CN_method(2, dx=2*np.pi/20, r=1/3, T=1)
-    xcTDMA, ucTDMA = CN_TDMA(2, dx=2*np.pi/20, r=1/3, T=1)
-    x, u_exact = exact_solution(2, dx=2*np.pi/20, T=1)
-    #print("Time 1 FE", uf)
-    #print("Time 1 BE", ub)
-    #print("Time 1 BETDMA", ubTDMA)
-    print("Time 1 CN", uc)
-    print("Time 1 CNTDMA", ucTDMA)
-    #print(u_exact)
-    plt.ylim()
-    #plt.plot(xf, uf, label="FE Method")
-    #plt.plot(x, u_exact, label="Exact Solution")
-    #plt.plot(xb, ub, label="BE Method")
-    #plt.plot(xbTDMA, ubTDMA, label="BE TDMA")
-    plt.plot(xc, uc, label="CN Method")
-    plt.plot(xcTDMA, ucTDMA, label="CN TDMA")
-    plt.plot(x, u_exact, label="Exact")
-    plt.legend()
-    plt.show()
-    test_TDMA()
+    #lot_result(2, 2*np.pi/20, 1/3, 0.1)
+    #plot_result(2, 2*np.pi/20, 1/3, 1)
+    #error_analysis(FE_method,"FE Method")
+    #error_analysis(BE_TDMA, "BE TDMA")
+    #e#rror_analysis(CN_TDMA, "CN TDMA")
+    #stability_anlysis(FE_method, "FE Method")
+    #stability_anlysis(BE_TDMA, "BE TDMA")
+    #stability_anlysis(CN_TDMA, "CN TDMA")
+    stability_anlysis(BE_TDMA, "Backward Euler when r=2", r=2)
+    stability_anlysis(CN_TDMA, "Crank Nicolson when r=2", r=2)
+    #for m in [3,5,7]:
+    #    plot_result(m, 2 * np.pi / 20, 0.5, 0.1)
+    amplicationFactors()
+
