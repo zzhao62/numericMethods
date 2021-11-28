@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 def generate_u(guess, dx=np.pi/10, dy=np.pi/10, x_range=2*np.pi, y_range=2*np.pi):
     Nx = int(x_range / dx) + 1
@@ -49,7 +50,7 @@ class solver:
 
         return u_next, r_max
 
-    def jacobiSOR_iter(self, u_next, u, w=0.8):
+    def jacobiSOR_iter(self, u_next, u, w=1.03):
         r = np.zeros_like(u)
         for j in range(1, self.Ny - 1):
             for i in range(1, self.Nx - 1):
@@ -70,7 +71,7 @@ class solver:
 
         return u_next, r_max
 
-    def gsSOR_iter(self, u_next, u, w=1.5):
+    def gsSOR_iter(self, u_next, u, w=1.75):
         r = np.zeros_like(u)
         for j in range(1, self.Ny - 1):
             for i in range(1, self.Nx - 1):
@@ -99,6 +100,8 @@ class solver:
         u = self.u.copy()
 
         while rmax > self.tolerance:
+            if (k > 1e+4):
+                break
             k += 1
             u_next, rmax = iter(u_next, u)
             res_array.append(rmax)
@@ -109,29 +112,41 @@ class solver:
 def compare_acc(result1, result2):
     return np.sum(np.sum(np.power(result1-result2,2)))
 
+def Q1Results():
+    # Write results into the file
+    f = open("./hw5result/result_nums", mode="w")
+    methods = ["Jacobi", "GS"]
+    for method in methods:
+        # set up a figure third as wide as it is tall
+        fig = plt.figure(figsize=plt.figaspect(1/3))
+        fig.suptitle("Solution by {} Method with Different Initial Guess".format(method))
+        tolerance = 1e-6
+        guess = ["zero", "xy", "random"]
+        for i in range(1,4):
+            igtype = solver(generate_u(guess=guess[i-1]), tolerance)
+            sol, res_array = igtype.solve(method.lower())
+            f.write("{}-{}-{}\n".format(method,guess[i-1], len(res_array)))
+            # plot the solutions
+            ax_sol = fig.add_subplot(2,3,i, projection='3d')
+            x = np.linspace(0,2*np.pi,21)
+            y = np.linspace(0,2*np.pi,21)
+            x, y = np.meshgrid(x,y)
+            surf = ax_sol.plot_surface(x,y,sol)
+            ax_sol.set_title("Initial Guess: {} ".format(guess[i-1]))
+            # plot the convergence
+            ax_covergence = fig.add_subplot(2,3,i+3)
+            iter_num = np.arange(1,len(res_array)+1)
+            ax_covergence.plot(iter_num, res_array)
+            ax_covergence.set_xlabel("Iteration Numbers")
+            ax_covergence.set_ylabel("Residual")
+
+        plt.savefig("./hw5result/q1_{}.png".format(method))
+    f.close()
+
+def find_optimal(method):
+    if method == "jacobi":
+
+
+
 if __name__ == '__main__':
-    tolerance = 1e-5
-    solver_zero = solver(generate_u(guess="zero"), tolerance)
-    solver_xy = solver(generate_u(guess="random"), tolerance)
-    solver_random = solver(generate_u(guess="xy"), tolerance)
-    # Question 1
-    #jacobi_zero, res_zero_jb = solver_zero.solve("jacobi")
-    #gs_zero, res_zero_gs = solver_zero.solve("gs")
-    #jacobi_random, res_random_jb = solver_random.solve("jacobi")
-    gs_random, res_random_gs = solver_zero.solve("gs")
-    #jacobi_xy, res_xy_jb = solver_xy.solve("jacobi")
-    #gs_xy, res_xy_gs = solver_xy.solve("gs")
-
-    #print("Initial guess are zeros. Iterations: Jacobi {}, GS {}".format(len(res_zero_jb), 0))
-    #print("Initial guess are randoms. Iterations: Jacobi {}, GS {}".format(len(res_random_jb), len(res_random_gs)))
-    #print("Initial guess are xy. Iterations: Jacobi {}, GS {}".format(len(res_xy_jb), len(res_xy_gs)))
-    # Question 2
-    #jacobi_zero_sor, res_zero_jbsor = solver_zero.solve("jacobiSOR")
-    gsSOR_random, resSOR_random_gs = solver_zero.solve("gsSOR")
-    #print("Initial guess are zeros. Iterations: JacobiSOR {}, GS {}".format(len(res_zero_jb),0))
-    print("Initial guess are randoms. Iterations: GS {}, GSSOR {}".format(len(res_random_gs), len(resSOR_random_gs)))
-
-
-
-    
-
+    Q1Results()
