@@ -101,6 +101,7 @@ class solver:
 
         while rmax > self.tolerance:
             if (k > 1e+4):
+                print("The iteration exceeds 10000 times!")
                 break
             k += 1
             u_next, rmax = iter(u_next, u)
@@ -144,7 +145,16 @@ def Q1Results():
     f.close()
 
 def find_optimal(method):
-    if method == "jacobi":
+    ws = []
+    if method == "jacobiSOR":
+        ws = [0.7, 0.8, 0.9, 1.0, 1.1]
+    elif method == "gsSOR":
+        ws = [0.9, 1.0, 1.1, 1.2, 1.4, 1.5, 1.6, 1.7, 1.75, 1.8]
+
+    guess = ["zero", "xy", "random"]
+    for ig in guess:
+        for w in ws:
+
 
 
 
