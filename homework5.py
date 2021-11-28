@@ -93,6 +93,18 @@ class solver:
                 u_next[j, i] = 0.25 * (u[j + 1, i] + u[j, i + 1] + u[j - 1, i] + u[j, i - 1])
         u_next = (1 - w) * u + w * u_next
         r_max = np.max(np.abs(r))
+
+        return u_next, r_max
+
+    def jacobi_tp(self, u_next, u, w, k):
+        w = w[0] if k % 3 ==  1 else w[1] if k % 3 == 2 else w[2]
+        r = np.zeros_like(u)
+        for j in range(1, self.Ny - 1):
+            for i in range(1, self.Nx - 1):
+                r[j, i] = self.res(u_next, j, i)
+                u_next[j, i] = 0.25 * (u[j + 1, i] + u[j, i + 1] + u[j - 1, i] + u[j, i - 1])
+        u_next = (1 - w) * u + w * u_next
+        r_max = np.max(np.abs(r))
         return u_next, r_max
 
     def solve(self, method, w):
@@ -107,6 +119,8 @@ class solver:
             iter = self.gsSOR_iter
         elif (method == "jacobiou"):
             iter = self.jacobi_over_under
+        elif (method == "jacobitp"):
+            iter = self.jacobi_tp
 
         res_array = []
         rmax = 10
@@ -199,7 +213,7 @@ def find_optimal(method):
     f.close()
 
 def Jacobi_OU():
-    wpairs = [[0.5,1.5], [1.5, 0.5], [0.7,1.3], [1.3,0.7], [0.8, 1.2], [1.2, 0.8], [0.9 ,1.1], [1.1,0.9]]
+    wpairs = [[3,0.3], [0.5,1.8], [1.8, 0.5], [0.7,1.5], [1.5,0.7], [0.8, 1.2], [1.2, 0.8], ]
     guess = ["zero", "xy", "random"]
     tolerance = 1e-6
     f = open("hw5result/Jacobi_pairs.txt", mode="w")
@@ -215,6 +229,22 @@ def Jacobi_OU():
             print("w={}: N={}".format(wpair, len(res_array)), end=" ;")
     f.close()
 
+def Jacobi_TP():
+    wpairs = [[4,0.5,0.5],[3,0.8,0.5],[2,0.7,0.7]]
+    guess = ["zero", "xy", "random"]
+    tolerance = 1e-6
+    f = open("hw5result/Jacobi_tp.txt", mode="w")
+    for i in range(1,4):
+        print("{} begins...".format(guess[i - 1]))
+        iter_nums = []
+        igtype = solver(generate_u(guess=guess[i - 1]), tolerance)
+        f.write(guess[i - 1] + "\n")
+        for wpair in wpairs:
+            sol, res_array = igtype.solve("jacobitp", w=wpair)
+            iter_nums.append(len(res_array))
+            f.write("w:{}-N:{}-".format(wpair, len(res_array)))
+            print("w={}: N={}".format(wpair, len(res_array)), end=" ;")
+    f.close()
 
 if __name__ == '__main__':
-    Jacobi_OU()
+    Jacobi_TP()
